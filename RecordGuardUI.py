@@ -134,29 +134,6 @@ def main():
             #Close Connection 
             conn.close()
 
-        # Create query function
-        def query():
-            # Create a database or connect to one
-            conn = sqlite3.connect('patient_data.db')
-            # Create cursor
-            c = conn.cursor()
-            
-            c.execute("SELECT *, oid FROM patients")
-            records = c.fetchall()
-            print(records)
-
-            ########### TEST TO SEE DATA ##############
-            # print_records = ''
-            # for record in records:
-            #     print_records += str(record[0]) + " " + str(record[1]) + " " + str(record[9])+"\n"
-            # query_label = Label(root, text=print_records)
-            # query_label.grid(row=12,column=0,columnspan=2)
-
-            #Commit Changes
-            conn.commit()
-            #Close Connection 
-            conn.close()
-
         def back():
             # Create a database or connect to one
             conn = sqlite3.connect('patient_data.db')
@@ -234,9 +211,6 @@ def main():
         #Buttons
         submit_btn = Button(root, text="Add Record to Database", command = submit)
         submit_btn.grid(row=9,column=0,columnspan=2,pady=10,padx=10,ipadx = 160)
-
-        query_btn = Button(root, text="Show Records", command = query)
-        query_btn.grid(row=10, column=0,columnspan=2,pady=10,padx=10,ipadx = 190)
 
         return_btn = Button(root, text="Return", command = back)
         return_btn.grid(row=11, column=0,columnspan=2,pady=10,padx=10,ipadx = 210)
@@ -360,6 +334,24 @@ def main():
             #Close Connection 
             conn.close()
 
+        def back():
+            # Create a database or connect to one
+            conn = sqlite3.connect('patient_data.db')
+            # Create cursor
+            c = conn.cursor()
+
+            change_btn.destroy()
+            id_editor.destroy()
+            id_editor_label.destroy()
+            return_btn.destroy()
+
+            main()
+
+            #Commit Changes
+            conn.commit()
+            #Close Connection 
+            conn.close()
+
         clean()
         # Create a database or connect to one
         conn = sqlite3.connect('patient_data.db')
@@ -374,23 +366,107 @@ def main():
         change_btn = Button(root, text="Change", command = change)
         change_btn.grid(row=1,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
 
+        return_btn = Button(root, text="Return", command = back)
+        return_btn.grid(row=11, column=0,columnspan=2,pady=10,padx=10,ipadx = 210)
+
         #Commit Changes
         conn.commit()
         #Close Connection 
         conn.close()
 
+    # Create query function
+    def query():
+        clean()
+        # Create a database or connect to one
+        conn = sqlite3.connect('patient_data.db')
+        # Create cursor
+        c = conn.cursor()
+
+        def auth():
+            def back():
+                # Create a database or connect to one
+                conn = sqlite3.connect('patient_data.db')
+                # Create cursor
+                c = conn.cursor()
+
+                authenticate_btn.destroy()
+                return_btn.destroy()
+                query_label.destroy()
+
+                main()
+
+                #Commit Changes
+                conn.commit()
+                #Close Connection 
+                conn.close()
+            # Create a database or connect to one
+            conn = sqlite3.connect('patient_data.db')
+            # Create cursor
+            c = conn.cursor()
+
+            c.execute("SELECT *, oid FROM patients")
+            records = c.fetchall()
+            ########### TEST TO SEE DATA ##############
+            print_records = ''
+            for record in records:
+                print_records += str(record[0]) + " " + str(record[1]) + " " + str(record[9])+"\n"
+            query_label = Label(root, text=print_records)
+            query_label.grid(row=3,column=0,columnspan=2)
+
+            return_btn = Button(root, text="Return", command = back)
+            return_btn.grid(row=2, column=0,columnspan=2,pady=10,padx=10,ipadx = 210)
+
+            #Commit Changes
+            conn.commit()
+            #Close Connection 
+            conn.close()  
+
+        def back():
+            # Create a database or connect to one
+            conn = sqlite3.connect('patient_data.db')
+            # Create cursor
+            c = conn.cursor()
+
+            authenticate_btn.destroy()
+            return_btn.destroy()
+
+            main()
+
+            #Commit Changes
+            conn.commit()
+            #Close Connection 
+            conn.close() 
+
+        authenticate_btn = Button(root, text="Authenticate Me", command = auth)
+        authenticate_btn.grid(row=1,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
+        return_btn = Button(root, text="Return", command = back)
+        return_btn.grid(row=2, column=0,columnspan=2,pady=10,padx=10,ipadx = 210)
         
+        #Commit Changes
+        conn.commit()
+        #Close Connection 
+        conn.close()    
 
     def clean():
         signup_btn.destroy()
         delete_btn.destroy()
+        query_btn.destroy()
+        update_btn.destroy()
+        logout_btn.destroy()
+    
+    def finish():
+        quit()
 
     signup_btn = Button(root, text="Register a Patient", command = signup)
     signup_btn.grid(row=1,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
     delete_btn = Button(root, text="Delete a Patient", command = delete)
-    delete_btn.grid(row=2,column=0,columnspan=2,pady=10,padx=10,ipadx = 190)
+    delete_btn.grid(row=2,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
+    query_btn = Button(root, text="Show Records", command = query)
+    query_btn.grid(row=3, column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
     update_btn = Button(root, text="Edit a Patient's Info", command = edit)
-    update_btn.grid(row=3,column=0,columnspan=2,pady=10,padx=10,ipadx = 190)
+    update_btn.grid(row=4,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
+    logout_btn = Button(root, text="Log Out", command = finish)
+    logout_btn.grid(row=5,column=0,columnspan=2,pady=10,padx=10,ipadx = 180)
 
 main()
 root.mainloop()
