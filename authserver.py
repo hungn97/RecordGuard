@@ -7,7 +7,7 @@ import time
 doc_as_file = open("docaskey.txt","r")
 doc_as_key = doc_as_file.read().encode()
 doc_as_file.close()
-fernet_as = Fernet(doc_as_key)
+fernet_doc = Fernet(doc_as_key)
 
 as_rs_file = open("asrskey.txt","r")
 as_rs_key = as_rs_file.read().encode()
@@ -15,6 +15,24 @@ as_rs_file.close()
 fernet_rs = Fernet(doc_as_key)
 
 # dbconn = sqlite3.connect('doctor_data.db')
+
+def decrypt_message(message):
+    cipher_txt = fernet_doc.decrypt(message)
+    json_message = json.loads(cipher_txt)
+    return json_message
+
+def create_ticket(message):
+    ticket = {
+        "doctorID": message["doctorID"],
+        "patientID": message["patientID"],
+        "timestamp": message["timestamp"]
+    }
+    return ticket
+
+def encrypt_ticket(ticket):
+    "Encrypts ticket as authentication for client to send to record server"
+    encrypted_ticket = fernet_rs.encrypt(ticket)
+    return encrypted_ticket
 
 
 class S(http.server.BaseHTTPRequestHandler):
@@ -26,21 +44,21 @@ class S(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self._set_headers()
         print("getting")
-        self.wfile.write("get")
+        self.wfile.write("get".encode())
 
     def do_POST(self):
-        # Doesn't do anything with posted data
+        length = int(self.headers.get('content-length'))
+        message = self.rfile.read(length)
+        decrypted_message = decrypt_message(message)
+        # if verify_credentials(decrypted_message):
+        #     create_ticket(decrypted_message)
+        ticket = create_ticket(decrypted_message)
+        print(ticket)
         self._set_headers()
-        print("posting")
-        self.wfile.write("post")
+        self.wfile.write(message)
 
 
 
-# def decrypt_message(ciphertext):
-#     "Decrypt ciphertext into plaintext using private key"
-#     plaintext = ciphertext
-#     return plaintext
-#
 # def verify_ds(ds):
 #     "Check that digital signature affirms identity"
 #
@@ -56,22 +74,9 @@ class S(http.server.BaseHTTPRequestHandler):
 #     else:
 #         return False
 
-def create_ticket(message):
-    ticket = {
-        "doctorID": message.doctorID,
-        "patientID": message.patientID,
-        "timestamp": message.timestamp
-    }
-    return ticket
-
-def encrypt_ticket(ticket):
-    "Encrypts ticket as authentication for client to send to record server"
-    encrypted_ticket = fernet_rs.encrypt(ticket)
-    return encrypted_ticket
 
 
-
-(server, port) = ('127.0.0.1', 8080)
+(server, port) = ('', 8080)
 
 httpd = http.server.HTTPServer((server, port), S)
 print("serving at port", port)
