@@ -65,15 +65,12 @@ def verify_signature(message, signature):
         match = False
     return match
 
-# def verify_credentials(message):
-#     "Access database and fetch user credetials for verification"
-#     #could use actual sql database or just a csv file to mock it
-#     #need a function to seach through sql database and return true if found
-#     #found = verify_database(message["doctorID"], message["doctorPW"], message["patientID"])
-#     if found and verify_ds(message.ds):
-#         return True
-#     else:
-#         return False
+def verify_credentials(message):
+    """Access database and fetch user credetials for verification"""
+    if found and verify_ds(message.ds):
+        return True
+    else:
+        return False
 
 class S(http.server.BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -91,16 +88,13 @@ class S(http.server.BaseHTTPRequestHandler):
         if verify_signature(auth_json, signature) is False:
             outbound_message = b"Request Denied"
         else:
-            # if message is not None: #verify_credentials(decrypted_message):
-            #
-            #
-            #     serialized_ticket = json.dumps(ticket).encode()
-            #     encrypted_ticket = decrypt_ticket(serialized_ticket)
-            #     outbound_message = fernet_doc.encrypt(encrypted_ticket)
-            #     print(outbound_message)
-            # else:
-            #     outbound_message = b"failed"
-            outbound_message = b"Request Granted"
+            if message is not None: #verify_credentials(decrypted_message):
+                serialized_ticket = json.dumps(ticket).encode()
+                encrypted_ticket = decrypt_ticket(serialized_ticket)
+                outbound_message = fernet_doc.encrypt(encrypted_ticket)
+                print(outbound_message)
+            else:
+                outbound_message = b"failed"
 
         self._set_headers()
         self.wfile.write(outbound_message)
