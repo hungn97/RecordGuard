@@ -1,7 +1,6 @@
 import http.server
 from cryptography.fernet import Fernet
 import json
-import time
 
 doc_as_file = open("docaskey.txt","r")
 doc_as_key = doc_as_file.read().encode()
@@ -27,7 +26,7 @@ def create_ticket(message):
     return ticket
 
 def encrypt_ticket(ticket):
-    "Encrypts ticket as authentication for client to send to record server"
+    """Encrypts ticket as authentication for client to send to record server"""
     encrypted_ticket = fernet_rs.encrypt(ticket)
     return encrypted_ticket
 
@@ -57,10 +56,6 @@ class S(http.server.BaseHTTPRequestHandler):
 
 
 
-# def verify_ds(ds):
-#     "Check that digital signature affirms identity"
-#
-#     return
 
 # def verify_credentials(message):
 #     "Access database and fetch user credetials for verification"

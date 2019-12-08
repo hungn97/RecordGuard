@@ -1,7 +1,6 @@
 import http.client
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -53,7 +52,8 @@ def create_auth_rs(ticket):
         "ticket": ticket
     }
     serialized_json = json.dumps(auth_json)
-    byte_serialized_json = serialized_json.encode()
+    serialized_json_decomma = serialized_json.replace(',', '$$$')
+    byte_serialized_json = serialized_json_decomma.encode()
     signature = add_signature(byte_serialized_json)
     message_tuple = (byte_serialized_json, signature)
     byte_message = str(message_tuple).encode()
@@ -80,6 +80,7 @@ def add_signature(message):
         ),
         hashes.SHA256()
     )
+    print(signature)
     return signature
 
 
@@ -118,10 +119,11 @@ while True:
         conn.request('POST', '/post', body, headers)
         http_response = conn.getresponse()
         message = http_response.read()
-        # print(message.decode())
+        print(message.decode())
         if message.decode() != "failed":
-            records = receive_records(message)
-            print("\n\nReceived from port", port, ":\n", json.dumps(records, indent=4))
+            # records = receive_records(message)
+            # print("\n\nReceived from port", port, ":\n", json.dumps(records, indent=4))
+            print("it wokred")
         else:
             print("\n\nAuthentication failed")
 
