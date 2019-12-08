@@ -9,6 +9,7 @@ import json
 from ast import literal_eval
 import pickle
 import time
+import sqlite3
 
 doc_rs_file = open("docrskey.txt","r")
 doc_rs_key = doc_rs_file.read().encode()
@@ -64,6 +65,19 @@ def verify_signature(message, signature):
     except:
         match = False
     return match
+
+with sqlite3.connect("patient_database.db") as db:
+    cursor = db.cursor()
+
+def verify_database(patientID):
+    find_user = ("SELECT * FROM user WHERE patientid = ?")
+    cursor.execute(find_user,(patientID))
+    results = cursor.fetchall()
+
+    if results:
+        for i in results:
+            print(i[1])
+            return True
 
 # def verify_credentials(message):
 #     "Access database and fetch user credetials for verification"
