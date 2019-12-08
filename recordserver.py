@@ -1,14 +1,12 @@
 import http.server
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 import json
-from ast import literal_eval
 import pickle
-import time
+import sqlite3
 
 doc_rs_file = open("docrskey.txt","r")
 doc_rs_key = doc_rs_file.read().encode()
@@ -26,17 +24,15 @@ with open("docpublickey.pem", "rb") as key_file:
         backend=default_backend()
     )
 
+with sqlite3.connect("patient_database.db") as db:
+    cursor = db.cursor()
 
 def decrypt_message(message):
     plaintext = fernet_doc.decrypt(message)
     return plaintext
 
-# def fetch_records(patientID):
-#
-#     return records
-
 def split_signature(message):
-    messsage_sig_json = pickle.loads(message)#str_message)
+    messsage_sig_json = pickle.loads(message)
     auth_json = messsage_sig_json["content"]
     signature = messsage_sig_json["signature"]
     return auth_json, signature
@@ -65,12 +61,41 @@ def verify_signature(message, signature):
         match = False
     return match
 
-def verify_credentials(message):
+
+def verify_credentials(auth_json, records):
     """Access database and fetch user credetials for verification"""
-    if found and verify_ds(message.ds):
+    if records and verify_ticket(auth_json):
         return True
     else:
         return False
+
+def fetch_records(patientID):
+    find_patients = ("SELECT * FROM patients WHERE patientid = ?")
+    cursor.execute(find_patients, patientID)
+    results = cursor.fetchall()
+    results = results[0]
+    print(results)
+    if results:
+        json_records = {
+            "patientID": results[0],
+            "name": results[1] + " " + results[2]
+        }
+        return json_records
+    else:
+        return False
+
+
+def verify_ticket(auth_json):
+    ticket = fernet_as.decrypt(auth_json["ticket"].encode())
+    str_ticket = ticket.decode()
+    json_ticket = json.loads(str_ticket)
+    if ((auth_json["doctorID"] == json_ticket["doctorID"]) and
+        (auth_json["patientID"] == json_ticket["patientID"]) and
+        ((json_ticket["timestamp"] - auth_json["timestamp"]) < 60)):
+        return True
+    else:
+        return False
+
 
 class S(http.server.BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -88,10 +113,11 @@ class S(http.server.BaseHTTPRequestHandler):
         if verify_signature(auth_json, signature) is False:
             outbound_message = b"Request Denied"
         else:
-            if message is not None: #verify_credentials(decrypted_message):
-                serialized_ticket = json.dumps(ticket).encode()
-                encrypted_ticket = decrypt_ticket(serialized_ticket)
-                outbound_message = fernet_doc.encrypt(encrypted_ticket)
+            records = fetch_records(auth_json["patientID"])
+            if verify_credentials(auth_json, records):
+                serialized_records = json.dumps(records)
+                byte_records = serialized_records.encode()
+                outbound_message = fernet_doc.encrypt(byte_records)
                 print(outbound_message)
             else:
                 outbound_message = b"failed"

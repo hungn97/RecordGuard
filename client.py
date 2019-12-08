@@ -91,7 +91,7 @@ def merge_signature(byte_serialized_json, signature):
     return serialized_message_sig
 
 while True:
-    print("\n\n-------------")
+    print("-------------------------------------------------")
     # get server ip and port
     while True:
         cmd = input('enter \'server:port\'\n>')
@@ -114,6 +114,7 @@ while True:
         http_response = conn.getresponse()
         message = http_response.read()
         # print(message.decode())
+        print("-------------------------------------------------")
         if message.decode() != "failed":
             ticket = receive_ticket(message)
             print("\n\nReceived from port", port, ":\n", ticket)
@@ -125,11 +126,12 @@ while True:
         conn.request('POST', '/post', body, headers)
         http_response = conn.getresponse()
         message = http_response.read()
+        print("-------------------------------------------------")
         print(message.decode())
         if message.decode() != "failed":
-            # records = receive_records(message)
-            # print("\n\nReceived from port", port, ":\n", json.dumps(records, indent=4))
-            print("it wokred")
+            records = receive_records(message)
+            print("\n\nReceived from port", port, ":\n", json.dumps(records, indent=4))
+            # print("it wokred")
         else:
             print("\n\nAuthentication failed")
 
