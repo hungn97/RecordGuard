@@ -7,6 +7,9 @@ from cryptography.hazmat.primitives import serialization
 import json
 import pickle
 import sqlite3
+import textwrap
+
+wrapper = textwrap.TextWrapper(width=50)
 
 doc_rs_file = open("docrskey.txt","r")
 doc_rs_key = doc_rs_file.read().encode()
@@ -74,11 +77,11 @@ def fetch_records(patientID):
     cursor.execute(find_patients, patientID)
     results = cursor.fetchall()
     results = results[0]
-    print(results)
     if results:
         json_records = {
             "patientID": results[0],
-            "name": results[1] + " " + results[2]
+            "firstName": results[1],
+            "lastName": results[2]
         }
         return json_records
     else:
@@ -107,9 +110,13 @@ class S(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get('content-length'))
         message = self.rfile.read(length)
         decrypted_message = decrypt_message(message)
-        print(decrypted_message)
         auth_json, signature = split_signature(decrypted_message)
-        print(auth_json, "\n", signature)
+        print("\n\n-------------------------------------------------")
+        print("Received from port", port, ":")
+        print("-------------------------------------------------")
+        print("Ciphertext:\n", wrapper.fill(text=message.decode()))
+        print("\nPlaintext:\n", json.dumps(auth_json, indent=4))
+        print(signature)
         if verify_signature(auth_json, signature) is False:
             outbound_message = b"Request Denied"
         else:
@@ -118,7 +125,6 @@ class S(http.server.BaseHTTPRequestHandler):
                 serialized_records = json.dumps(records)
                 byte_records = serialized_records.encode()
                 outbound_message = fernet_doc.encrypt(byte_records)
-                print(outbound_message)
             else:
                 outbound_message = b"failed"
 

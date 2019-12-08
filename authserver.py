@@ -2,6 +2,9 @@ import http.server
 from cryptography.fernet import Fernet
 import json
 import sqlite3
+import textwrap
+
+wrapper = textwrap.TextWrapper(width=50)
 
 doc_as_file = open("docaskey.txt","r")
 doc_as_key = doc_as_file.read().encode()
@@ -12,6 +15,9 @@ as_rs_file = open("asrskey.txt","r")
 as_rs_key = as_rs_file.read().encode()
 as_rs_file.close()
 fernet_rs = Fernet(as_rs_key)
+
+with sqlite3.connect("doctor_database.db") as db:
+    cursor = db.cursor()
 
 def decrypt_message(message):
     plaintext = fernet_doc.decrypt(message)
@@ -31,6 +37,16 @@ def encrypt_ticket(ticket):
     encrypted_ticket = fernet_rs.encrypt(ticket)
     return encrypted_ticket
 
+def verify_credentials(message):
+    find_user = "SELECT * FROM user WHERE userid = ? AND userpw = ? AND patientid = ?"
+    cursor.execute(find_user, [message["doctorID"], message["doctorPW"], message["patientID"]])
+    results = cursor.fetchall()
+
+    if results:
+        return True
+    else:
+        return False
+
 
 class S(http.server.BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -42,47 +58,26 @@ class S(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get('content-length'))
         message = self.rfile.read(length)
         decrypted_message = decrypt_message(message)
-
-        if message is not None: #verify_credentials(decrypted_message):
+        print("\n\n-------------------------------------------------")
+        print("Received from port", port, ":")
+        print("-------------------------------------------------")
+        print("Ciphertext:\n", wrapper.fill(text=message.decode()))
+        print("\nPlaintext:\n", json.dumps(decrypted_message, indent=4))
+        if verify_credentials(decrypted_message):
             ticket = create_ticket(decrypted_message)
             serialized_ticket = json.dumps(ticket).encode()
             encrypted_ticket = encrypt_ticket(serialized_ticket)
             outbound_message = fernet_doc.encrypt(encrypted_ticket)
-            print(outbound_message)
         else:
+            print("\nBad Auth")
             outbound_message = "failed".encode()
 
         self._set_headers()
         self.wfile.write(outbound_message)
 
 
-with sqlite3.connect("doctor_database.db") as db:
-    cursor = db.cursor()
-
-def verify_database(doctorID, doctorPW, patientID):
-    find_user = ("SELECT * FROM user WHERE userid = ? AND userpw = ? AND patientid = ?")
-    cursor.execute(find_user,[(doctorID),(doctorPW),(patientID)])
-    results = cursor.fetchall()
-
-    if results:
-        for i in results:
-            print("Welcome")
-            return True
-
-# def verify_credentials(message):
-#     "Access database and fetch user credetials for verification"
-#     #could use actual sql database or just a csv file to mock it
-#     #need a function to seach through sql database and return true if found
-#     #found = verify_database(message["doctorID"], message["doctorPW"], message["patientID"])
-#     if found and verify_ds(message.ds):
-#         return True
-#     else:
-#         return False
-
-
-
 (server, port) = ('', 8080)
 
 httpd = http.server.HTTPServer((server, port), S)
-print("serving at port", port)
+print("Serving at port", port)
 httpd.serve_forever()

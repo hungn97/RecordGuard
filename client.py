@@ -7,6 +7,9 @@ from cryptography.hazmat.primitives import serialization
 import pickle
 import json
 import time
+import textwrap
+
+wrapper = textwrap.TextWrapper(width=50)
 
 doc_as_file = open("docaskey.txt","r")
 doc_as_key = doc_as_file.read().encode()
@@ -27,13 +30,13 @@ with open("docprivatekey.pem", "rb") as key_file:
 
 def create_auth_as():
     """create the authentication package to send to as as a encrypted serialized json"""
-    doctor_id = input('enter Doctor ID\n>')
-    password = input('enter Doctor PW\n>')
-    patient_id = input('enter Patient ID\n>')
+    doctor_id = input('Enter Doctor ID\n>')
+    password = input('Enter Doctor PW\n>')
+    patient_id = input('Enter Patient ID\n>')
     timestamp = time.time()
     auth_json = {
         "doctorID": doctor_id,
-        "password": password,
+        "doctorPW": password,
         "patientID": patient_id,
         "timestamp": timestamp
     }
@@ -43,8 +46,8 @@ def create_auth_as():
     return encrypted_json
 
 def create_auth_rs(ticket):
-    doctor_id = input('enter Doctor ID\n>')
-    patient_id = input('enter Patient ID\n>')
+    doctor_id = input('Enter Doctor ID\n>')
+    patient_id = input('Enter Patient ID\n>')
     timestamp = time.time()
     auth_json = {
         "doctorID": doctor_id,
@@ -79,7 +82,6 @@ def create_signature(message):
         ),
         hashes.SHA256()
     )
-    print(signature)
     return signature
 
 def merge_signature(byte_serialized_json, signature):
@@ -92,9 +94,11 @@ def merge_signature(byte_serialized_json, signature):
 
 while True:
     print("-------------------------------------------------")
+    print("Client Start")
+    print("-------------------------------------------------")
     # get server ip and port
     while True:
-        cmd = input('enter \'server:port\'\n>')
+        cmd = input('Enter \'server:port\'\n>')
         try:
             server = cmd.split(':')[0]
             port = int(cmd.split(':')[1])
@@ -102,38 +106,42 @@ while True:
             # 8080(AS) or 8081(RS)
             break;
         except:
-            print("invalid input")
+            print("Invalid input")
 
     conn = http.client.HTTPConnection(server, port)
 
     headers = {'Content-type': 'text/plain'}
 
     if port == 8080:
+        print("\n\n-------------------------------------------------")
+        print("Authentication")
+        print("-------------------------------------------------")
         body = create_auth_as()
         conn.request('POST', '/post', body, headers)
         http_response = conn.getresponse()
         message = http_response.read()
-        # print(message.decode())
+        print("\n\n-------------------------------------------------")
+        print("Received from port", port, ":")
         print("-------------------------------------------------")
         if message.decode() != "failed":
             ticket = receive_ticket(message)
-            print("\n\nReceived from port", port, ":\n", ticket)
+            print(wrapper.fill(text=ticket))
         else:
-            print("\n\nAuthentication failed")
+            print("\nAuthentication failed")
 
     if port == 8081:
         body = create_auth_rs(ticket)
         conn.request('POST', '/post', body, headers)
         http_response = conn.getresponse()
         message = http_response.read()
+        print("\n\n-------------------------------------------------")
+        print("Received from port", port, ":")
         print("-------------------------------------------------")
-        print(message.decode())
         if message.decode() != "failed":
             records = receive_records(message)
-            print("\n\nReceived from port", port, ":\n", json.dumps(records, indent=4))
-            # print("it wokred")
+            print(json.dumps(records, indent=4))
         else:
-            print("\n\nAuthentication failed")
+            print("\nAuthentication failed")
 
-    print("\n\nSession completed . . . Closing connection")
+    print("\n\n\nSession completed . . . Closing connection\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     conn.close()
