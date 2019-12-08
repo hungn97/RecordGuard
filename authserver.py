@@ -1,6 +1,7 @@
 import http.server
 from cryptography.fernet import Fernet
 import json
+import sqlite3
 
 doc_as_file = open("docaskey.txt","r")
 doc_as_key = doc_as_file.read().encode()
@@ -55,7 +56,18 @@ class S(http.server.BaseHTTPRequestHandler):
         self.wfile.write(outbound_message)
 
 
+with sqlite3.connect("doctor_database.db") as db:
+    cursor = db.cursor()
 
+def verify_database(doctorID, doctorPW, patientID):
+    find_user = ("SELECT * FROM user WHERE userid = ? AND userpw = ? AND patientid = ?")
+    cursor.execute(find_user,[(doctorID),(doctorPW),(patientID)])
+    results = cursor.fetchall()
+
+    if results:
+        for i in results:
+            print("Welcome")
+            return True
 
 # def verify_credentials(message):
 #     "Access database and fetch user credetials for verification"
