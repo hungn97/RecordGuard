@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 import json
 from ast import literal_eval
+import pickle
 import time
 
 doc_rs_file = open("docrskey.txt","r")
@@ -30,17 +31,15 @@ def decrypt_message(message):
     plaintext = fernet_doc.decrypt(message)
     return plaintext
 
-# def fetch_records():
+# def fetch_records(patientID):
 #
 #     return records
 
 def split_signature(message):
-    str_message = str(message)
-    str_message = str_message.replace(',', '$$$')
-    auth_json, signature = str_message.split(',')
-    auth_json = auth_json.replace('$$$', ',')
-    signature = signature.replace('$$$', ',')
-    return auth_json, signature.encode()
+    messsage_sig_json = pickle.loads(message)#str_message)
+    auth_json = messsage_sig_json["content"]
+    signature = messsage_sig_json["signature"]
+    return auth_json, signature
 
 def decrypt_ticket(ticket):
     """Encrypts ticket as authentication for client to send to record server"""
@@ -49,11 +48,13 @@ def decrypt_ticket(ticket):
 
 def verify_signature(message, signature):
     """Check that digital signature affirms identity"""
+    serialized_message = json.dumps(message)
+    byte_message = serialized_message.encode()
     match = True
     try:
         public_key.verify(
             signature,
-            message,
+            byte_message,
             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
                 salt_length=padding.PSS.MAX_LENGTH
@@ -86,6 +87,7 @@ class S(http.server.BaseHTTPRequestHandler):
         decrypted_message = decrypt_message(message)
         print(decrypted_message)
         auth_json, signature = split_signature(decrypted_message)
+        print(auth_json, "\n", signature)
         if verify_signature(auth_json, signature) is False:
             outbound_message = b"Request Denied"
         else:

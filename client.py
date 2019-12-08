@@ -4,6 +4,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
+import pickle
 import json
 import time
 
@@ -52,11 +53,9 @@ def create_auth_rs(ticket):
         "ticket": ticket
     }
     serialized_json = json.dumps(auth_json)
-    serialized_json_decomma = serialized_json.replace(',', '$$$')
-    byte_serialized_json = serialized_json_decomma.encode()
-    signature = add_signature(byte_serialized_json)
-    message_tuple = (byte_serialized_json, signature)
-    byte_message = str(message_tuple).encode()
+    byte_serialized_json = serialized_json.encode()
+    signature = create_signature(byte_serialized_json)
+    byte_message = merge_signature(auth_json, signature)
     encrypted_message = fernet_rs.encrypt(byte_message)
     return encrypted_message
 
@@ -71,7 +70,7 @@ def receive_records(message):
     json_message = json.loads(plaintext)
     return json_message
 
-def add_signature(message):
+def create_signature(message):
     signature = private_key.sign(
         message,
         padding.PSS(
@@ -83,6 +82,13 @@ def add_signature(message):
     print(signature)
     return signature
 
+def merge_signature(byte_serialized_json, signature):
+    message_sig_json = {
+        "content": byte_serialized_json,
+        "signature": signature
+    }
+    serialized_message_sig = pickle.dumps(message_sig_json)
+    return serialized_message_sig
 
 while True:
     print("\n\n-------------")
