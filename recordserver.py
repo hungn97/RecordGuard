@@ -91,6 +91,8 @@ def fetch_records(patientID):
 def verify_ticket(auth_json):
     ticket = fernet_as.decrypt(auth_json["ticket"].encode())
     str_ticket = ticket.decode()
+    print("\nTicket:")
+    print(json.dumps(json.loads(str_ticket), indent=4))
     json_ticket = json.loads(str_ticket)
     if ((auth_json["doctorID"] == json_ticket["doctorID"]) and
         (auth_json["patientID"] == json_ticket["patientID"]) and
