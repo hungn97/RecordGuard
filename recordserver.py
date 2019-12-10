@@ -67,10 +67,11 @@ def verify_signature(message, signature):
 
 def verify_credentials(auth_json, records):
     """Access database and fetch user credetials for verification"""
-    if records and verify_ticket(auth_json):
-        return True
+    ticket_check = verify_ticket(auth_json)
+    if records and (ticket_check == 0):
+        return 0
     else:
-        return False
+        return ticket_check
 
 def fetch_records(patientID):
     find_patients = ("SELECT * FROM patients WHERE patientid = ?")
@@ -94,12 +95,13 @@ def verify_ticket(auth_json):
     print("\nTicket:")
     print(json.dumps(json.loads(str_ticket), indent=4))
     json_ticket = json.loads(str_ticket)
-    if ((auth_json["doctorID"] == json_ticket["doctorID"]) and
-        (auth_json["patientID"] == json_ticket["patientID"]) and
-        ((json_ticket["timestamp"] - auth_json["timestamp"]) < 60)):
-        return True
+    if (auth_json["doctorID"] == json_ticket["doctorID"]) and (auth_json["patientID"] == json_ticket["patientID"]):
+        if (auth_json["timestamp"] - json_ticket["timestamp"]) < 60:
+            return 0
+        else:
+            return 2
     else:
-        return False
+        return 1
 
 
 class S(http.server.BaseHTTPRequestHandler):
@@ -120,15 +122,24 @@ class S(http.server.BaseHTTPRequestHandler):
         print("\nPlaintext:\n", json.dumps(auth_json, indent=4))
         print(signature)
         if verify_signature(auth_json, signature) is False:
-            outbound_message = b"Request Denied"
+            outbound_message = b"signature"
+            print("\n\nSignature mismatch")
         else:
             records = fetch_records(auth_json["patientID"])
-            if verify_credentials(auth_json, records):
+            verify_result = verify_credentials(auth_json, records)
+            if verify_result == 0:
                 serialized_records = json.dumps(records)
                 byte_records = serialized_records.encode()
                 outbound_message = fernet_doc.encrypt(byte_records)
+            elif verify_result == 1:
+                outbound_message = b"auth"
+                print("\n\nTicket mismatch")
+            elif verify_result == 2:
+                outbound_message = b"timeout"
+                print("\n\nTicket expired")
             else:
                 outbound_message = b"failed"
+                print("\n\nFailed")
 
         self._set_headers()
         self.wfile.write(outbound_message)

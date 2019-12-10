@@ -127,7 +127,7 @@ while True:
             ticket = receive_ticket(message)
             print(wrapper.fill(text=ticket))
         else:
-            print("\nAuthentication failed")
+            print("\nBad credentials . . . Authentication failed")
 
     if port == 8081:
         body = create_auth_rs(ticket)
@@ -137,11 +137,15 @@ while True:
         print("\n\n-------------------------------------------------")
         print("Received from port", port, ":")
         print("-------------------------------------------------")
-        if message.decode() != "failed":
+        if message.decode() == "failed":
+            print("\nAuthentication failed")
+        elif message.decode() == "auth":
+            print("\nTicket mismatch . . . Authentication failed")
+        elif message.decode() == "timeout":
+            print("\nTicket expired . . . Authentication failed")
+        else:
             records = receive_records(message)
             print(json.dumps(records, indent=4))
-        else:
-            print("\nAuthentication failed")
 
     print("\n\n\nSession completed . . . Closing connection\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     conn.close()

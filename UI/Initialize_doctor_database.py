@@ -14,6 +14,10 @@ cursor.execute("""
 INSERT INTO user(userid,userpw,patientid)
 VALUES("30096073","password","1")
 """)
+cursor.execute("""
+INSERT INTO user(userid,userpw,patientid)
+VALUES("30426205","password","2")
+""")
 db.commit()
 
 cursor.execute("SELECT * FROM user")
