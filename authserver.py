@@ -20,11 +20,13 @@ with sqlite3.connect("doctor_database.db") as db:
     cursor = db.cursor()
 
 def decrypt_message(message):
+    """Decrypts message received from client with shared key"""
     plaintext = fernet_doc.decrypt(message)
     json_message = json.loads(plaintext)
     return json_message
 
 def create_ticket(message):
+    """Makes ticket to send to client"""
     ticket = {
         "doctorID": message["doctorID"],
         "patientID": message["patientID"],
@@ -38,6 +40,7 @@ def encrypt_ticket(ticket):
     return encrypted_ticket
 
 def verify_credentials(message):
+    """Look in database to find doctor in order to authenticate"""
     find_user = "SELECT * FROM user WHERE userid = ? AND userpw = ? AND patientid = ?"
     cursor.execute(find_user, [message["doctorID"], message["doctorPW"], message["patientID"]])
     results = cursor.fetchall()

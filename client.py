@@ -129,7 +129,7 @@ while True:
         else:
             print("\nBad credentials . . . Authentication failed")
 
-    if port == 8081:
+    if port == 8081 or port == 8082:
         body = create_auth_rs(ticket)
         conn.request('POST', '/post', body, headers)
         http_response = conn.getresponse()
@@ -143,6 +143,8 @@ while True:
             print("\nTicket mismatch . . . Authentication failed")
         elif message.decode() == "timeout":
             print("\nTicket expired . . . Authentication failed")
+        elif message.decode() == "signature":
+            print("\nSignature validation error . . . Authentication failed")
         else:
             records = receive_records(message)
             print(json.dumps(records, indent=4))

@@ -31,6 +31,7 @@ with sqlite3.connect("patient_database.db") as db:
     cursor = db.cursor()
 
 def decrypt_message(message):
+    """Decrypts message received from client with shared key"""
     plaintext = fernet_doc.decrypt(message)
     return plaintext
 
